@@ -1,21 +1,7 @@
 import 'package:flutter/material.dart';
-import 'signup.dart';
 
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(debugShowCheckedModeBanner: false, home: LoginPage());
-  }
-}
-
-class LoginPage extends StatelessWidget {
-  const LoginPage({super.key});
+class SignupPage extends StatelessWidget {
+  const SignupPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -34,14 +20,12 @@ class LoginPage extends StatelessWidget {
           child: SingleChildScrollView(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Header Area: Flowers + Arched Title
+                // --- THE ARCHED TITLE WITH FLOWERS ---
                 Stack(
                   alignment: Alignment.center,
                   clipBehavior: Clip.none,
                   children: [
-                    // Flowers positioned in an arc above the title
                     Positioned(
                       top: -45,
                       child: Row(
@@ -70,8 +54,6 @@ class LoginPage extends StatelessWidget {
                         ],
                       ),
                     ),
-
-                    // Title: LocalLens
                     const Text(
                       'LocalLens',
                       style: TextStyle(
@@ -91,40 +73,37 @@ class LoginPage extends StatelessWidget {
                   ],
                 ),
 
-                const SizedBox(height: 50),
+                const SizedBox(height: 40),
 
-                // Form Area
+                // --- USER DETAILS FORM ---
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 45),
                   child: Column(
                     children: [
+                      _buildTextField("Full Name"),
+                      _buildTextField("Email Address"),
                       _buildTextField("Username"),
-                      const SizedBox(height: 15),
                       _buildTextField("Password", isObscure: true),
-                      const SizedBox(height: 40),
 
-                      // Login Button
+                      const SizedBox(height: 30),
+
+                      // Create Account Button
                       _buildActionButton(
-                        "Login",
-                        Colors.white,
-                        Colors.pinkAccent,
-                        () {},
+                        label: "Create Account",
+                        textColor: Colors.green,
+                        onPressed: () {
+                          // Add your registration logic here
+                        },
                       ),
 
                       const SizedBox(height: 15),
 
-                      // Signup Button (Now mirrors Login design)
+                      // Login Button (to go back)
                       _buildActionButton(
-                        "Signup",
-                        Colors.white,
-                        Colors.green,
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => SignupPage(),
-                            ),
-                          );
+                        label: "Login",
+                        textColor: Colors.pinkAccent,
+                        onPressed: () {
+                          Navigator.pop(context); // Goes back to the main page
                         },
                       ),
                     ],
@@ -138,9 +117,10 @@ class LoginPage extends StatelessWidget {
     );
   }
 
-  // Helper for Input Fields
+  // Helper for consistent rectangular text inputs
   Widget _buildTextField(String hint, {bool isObscure = false}) {
     return Container(
+      margin: const EdgeInsets.only(bottom: 15),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.9),
         borderRadius: BorderRadius.circular(12),
@@ -163,19 +143,18 @@ class LoginPage extends StatelessWidget {
     );
   }
 
-  // Helper for Buttons (ensures both Login and Signup look the same)
-  Widget _buildActionButton(
-    String label,
-    Color bgColor,
-    Color textColor,
-    VoidCallback onPressed,
-  ) {
+  // Helper for consistent buttons
+  Widget _buildActionButton({
+    required String label,
+    required Color textColor,
+    required VoidCallback onPressed,
+  }) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: bgColor,
+          backgroundColor: Colors.white,
           foregroundColor: textColor,
           padding: const EdgeInsets.symmetric(vertical: 18),
           shape: RoundedRectangleBorder(
