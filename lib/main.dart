@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'firebase_options.dart';
 import 'signup.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+  options: DefaultFirebaseOptions.currentPlatform,);
   runApp(const MyApp());
 }
 
@@ -10,12 +16,58 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(debugShowCheckedModeBanner: false, home: LoginPage());
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false, 
+      home: LoginPage()
+    );
   }
 }
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  // Firebase Login Function
+  Future<void> _login() async {
+    setState(() => _isLoading = true);
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login Successful!')),
+        );
+        // Navigate to your home screen here
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'Authentication failed')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,42 +88,27 @@ class LoginPage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Header Area: Flowers + Arched Title
+                // Header Area
                 Stack(
                   alignment: Alignment.center,
                   clipBehavior: Clip.none,
                   children: [
-                    // Flowers positioned in an arc above the title
                     Positioned(
                       top: -45,
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: const [
-                          Icon(
-                            Icons.local_florist,
-                            color: Colors.white70,
-                            size: 28,
-                          ),
+                          Icon(Icons.local_florist, color: Colors.white70, size: 28),
                           SizedBox(width: 12),
                           Padding(
                             padding: EdgeInsets.only(bottom: 18),
-                            child: Icon(
-                              Icons.filter_vintage,
-                              color: Colors.white,
-                              size: 38,
-                            ),
+                            child: Icon(Icons.filter_vintage, color: Colors.white, size: 38),
                           ),
                           SizedBox(width: 12),
-                          Icon(
-                            Icons.local_florist,
-                            color: Colors.white70,
-                            size: 28,
-                          ),
+                          Icon(Icons.local_florist, color: Colors.white70, size: 28),
                         ],
                       ),
                     ),
-
-                    // Title: LocalLens
                     const Text(
                       'LocalLens',
                       style: TextStyle(
@@ -90,7 +127,6 @@ class LoginPage extends StatelessWidget {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 50),
 
                 // Form Area
@@ -98,22 +134,23 @@ class LoginPage extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 45),
                   child: Column(
                     children: [
-                      _buildTextField("Username"),
+                      _buildTextField("Email", _emailController),
                       const SizedBox(height: 15),
-                      _buildTextField("Password", isObscure: true),
+                      _buildTextField("Password", _passwordController, isObscure: true),
                       const SizedBox(height: 40),
 
                       // Login Button
-                      _buildActionButton(
-                        "Login",
-                        Colors.white,
-                        Colors.pinkAccent,
-                        () {},
-                      ),
-
+                      _isLoading 
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : _buildActionButton(
+                            "Login",
+                            Colors.white,
+                            Colors.pinkAccent,
+                            _login,
+                          ),
                       const SizedBox(height: 15),
 
-                      // Signup Button (Now mirrors Login design)
+                      // Signup Button
                       _buildActionButton(
                         "Signup",
                         Colors.white,
@@ -122,7 +159,7 @@ class LoginPage extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => SignupPage(),
+                              builder: (context) => const SignupPage(),
                             ),
                           );
                         },
@@ -139,7 +176,7 @@ class LoginPage extends StatelessWidget {
   }
 
   // Helper for Input Fields
-  Widget _buildTextField(String hint, {bool isObscure = false}) {
+  Widget _buildTextField(String hint, TextEditingController controller, {bool isObscure = false}) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.9),
@@ -149,7 +186,9 @@ class LoginPage extends StatelessWidget {
         ],
       ),
       child: TextField(
+        controller: controller,
         obscureText: isObscure,
+        keyboardType: hint == "Email" ? TextInputType.emailAddress : TextInputType.text,
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: const TextStyle(color: Colors.grey),
@@ -163,13 +202,8 @@ class LoginPage extends StatelessWidget {
     );
   }
 
-  // Helper for Buttons (ensures both Login and Signup look the same)
-  Widget _buildActionButton(
-    String label,
-    Color bgColor,
-    Color textColor,
-    VoidCallback onPressed,
-  ) {
+  // Helper for Buttons
+  Widget _buildActionButton(String label, Color bgColor, Color textColor, VoidCallback onPressed) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(

@@ -1,7 +1,76 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class SignupPage extends StatelessWidget {
+class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
+
+  @override
+  State<SignupPage> createState() => _SignupPageState();
+}
+
+class _SignupPageState extends State<SignupPage> {
+  // Controllers to capture text input
+  final TextEditingController _fullNameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  
+  bool _isLoading = false;
+
+  // Firebase Registration Logic
+  Future<void> _register() async {
+    // Basic validation
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all required fields.')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      // 1. Create the user in Firebase Auth
+      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      // 2. Optionally, update the user's display name
+      await userCredential.user?.updateDisplayName(_fullNameController.text.trim());
+
+      // Note: If you want to store the "Username", you will need to save it to 
+      // Firestore or Realtime Database, as Firebase Auth only has a single Display Name field.
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Account Created Successfully! You can now log in.')),
+        );
+        Navigator.pop(context); // Navigate back to the Login Page
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        // Show Firebase error messages (e.g., weak password, email already in use)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'Registration failed. Please try again.')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    // Clean up controllers when the widget is removed
+    _fullNameController.dispose();
+    _emailController.dispose();
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,21 +149,21 @@ class SignupPage extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 45),
                   child: Column(
                     children: [
-                      _buildTextField("Full Name"),
-                      _buildTextField("Email Address"),
-                      _buildTextField("Username"),
-                      _buildTextField("Password", isObscure: true),
+                      _buildTextField("Full Name", _fullNameController),
+                      _buildTextField("Email Address", _emailController, isEmail: true),
+                      _buildTextField("Username", _usernameController),
+                      _buildTextField("Password (min 6 chars)", _passwordController, isObscure: true),
 
                       const SizedBox(height: 30),
 
                       // Create Account Button
-                      _buildActionButton(
-                        label: "Create Account",
-                        textColor: Colors.green,
-                        onPressed: () {
-                          // Add your registration logic here
-                        },
-                      ),
+                      _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : _buildActionButton(
+                              label: "Create Account",
+                              textColor: Colors.green,
+                              onPressed: _register,
+                            ),
 
                       const SizedBox(height: 15),
 
@@ -118,7 +187,7 @@ class SignupPage extends StatelessWidget {
   }
 
   // Helper for consistent rectangular text inputs
-  Widget _buildTextField(String hint, {bool isObscure = false}) {
+  Widget _buildTextField(String hint, TextEditingController controller, {bool isObscure = false, bool isEmail = false}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
       decoration: BoxDecoration(
@@ -129,7 +198,9 @@ class SignupPage extends StatelessWidget {
         ],
       ),
       child: TextField(
+        controller: controller,
         obscureText: isObscure,
+        keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.text,
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: const TextStyle(color: Colors.grey),

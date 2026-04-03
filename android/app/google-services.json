@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "532159564212",
+    "project_id": "local-lens-82877",
+    "storage_bucket": "local-lens-82877.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:532159564212:android:0500339b91df770f104ae1",
+        "android_client_info": {
+          "package_name": "com.example.locallens"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyChqeJJYOrlCUys9MHR92W_dqtq8f3YQcQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
