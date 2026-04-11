@@ -3,11 +3,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'signup.dart';
+import 'dashboard.dart'; // Ensure your dashboard file is named this or update the import
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-  options: DefaultFirebaseOptions.currentPlatform,);
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
 
@@ -16,9 +16,21 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false, 
-      home: LoginPage()
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(primarySwatch: Colors.pink),
+      // StreamBuilder listens to the user's auth state
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          // If the snapshot has data, the user is logged in
+          if (snapshot.hasData) {
+            return const DashboardPage();
+          }
+          // Otherwise, show the login screen
+          return const LoginPage();
+        },
+      ),
     );
   }
 }
@@ -35,20 +47,22 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
 
-  // Firebase Login Function
   Future<void> _login() async {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter email and password')),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login Successful!')),
-        );
-        // Navigate to your home screen here
-      }
+      // No need for manual navigation here!
+      // StreamBuilder in MyApp will catch the login and show DashboardPage.
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -86,83 +100,40 @@ class _LoginPageState extends State<LoginPage> {
           child: SingleChildScrollView(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Header Area
-                Stack(
-                  alignment: Alignment.center,
-                  clipBehavior: Clip.none,
-                  children: [
-                    Positioned(
-                      top: -45,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Icon(Icons.local_florist, color: Colors.white70, size: 28),
-                          SizedBox(width: 12),
-                          Padding(
-                            padding: EdgeInsets.only(bottom: 18),
-                            child: Icon(Icons.filter_vintage, color: Colors.white, size: 38),
-                          ),
-                          SizedBox(width: 12),
-                          Icon(Icons.local_florist, color: Colors.white70, size: 28),
-                        ],
-                      ),
-                    ),
-                    const Text(
-                      'LocalLens',
-                      style: TextStyle(
-                        fontFamily: 'Cursive',
-                        fontSize: 55,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        shadows: [
-                          Shadow(
-                            blurRadius: 15,
-                            color: Colors.black12,
-                            offset: Offset(2, 4),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                _buildHeader(),
                 const SizedBox(height: 50),
-
-                // Form Area
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 45),
                   child: Column(
                     children: [
                       _buildTextField("Email", _emailController),
                       const SizedBox(height: 15),
-                      _buildTextField("Password", _passwordController, isObscure: true),
+                      _buildTextField(
+                        "Password",
+                        _passwordController,
+                        isObscure: true,
+                      ),
                       const SizedBox(height: 40),
-
-                      // Login Button
-                      _isLoading 
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : _buildActionButton(
-                            "Login",
-                            Colors.white,
-                            Colors.pinkAccent,
-                            _login,
-                          ),
+                      _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : _buildActionButton(
+                              "Login",
+                              Colors.white,
+                              Colors.pinkAccent,
+                              _login,
+                            ),
                       const SizedBox(height: 15),
-
-                      // Signup Button
                       _buildActionButton(
                         "Signup",
                         Colors.white,
                         Colors.green,
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const SignupPage(),
-                            ),
-                          );
-                        },
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SignupPage(),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -175,8 +146,56 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // Helper for Input Fields
-  Widget _buildTextField(String hint, TextEditingController controller, {bool isObscure = false}) {
+  Widget _buildHeader() {
+    return Stack(
+      alignment: Alignment.center,
+      clipBehavior: Clip.none,
+      children: [
+        Positioned(
+          top: -45,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              Icon(Icons.local_florist, color: Colors.white70, size: 28),
+              SizedBox(width: 12),
+              Padding(
+                padding: EdgeInsets.only(bottom: 18),
+                child: Icon(
+                  Icons.filter_vintage,
+                  color: Colors.white,
+                  size: 38,
+                ),
+              ),
+              SizedBox(width: 12),
+              Icon(Icons.local_florist, color: Colors.white70, size: 28),
+            ],
+          ),
+        ),
+        const Text(
+          'LocalLens',
+          style: TextStyle(
+            fontFamily: 'Cursive',
+            fontSize: 55,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            shadows: [
+              Shadow(
+                blurRadius: 15,
+                color: Colors.black12,
+                offset: Offset(2, 4),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTextField(
+    String hint,
+    TextEditingController controller, {
+    bool isObscure = false,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.9),
@@ -188,10 +207,8 @@ class _LoginPageState extends State<LoginPage> {
       child: TextField(
         controller: controller,
         obscureText: isObscure,
-        keyboardType: hint == "Email" ? TextInputType.emailAddress : TextInputType.text,
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: Colors.grey),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 20,
@@ -202,8 +219,12 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // Helper for Buttons
-  Widget _buildActionButton(String label, Color bgColor, Color textColor, VoidCallback onPressed) {
+  Widget _buildActionButton(
+    String label,
+    Color bgColor,
+    Color textColor,
+    VoidCallback onPressed,
+  ) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
