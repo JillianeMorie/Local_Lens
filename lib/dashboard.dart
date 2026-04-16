@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'profile.dart';
+import 'create_post.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
 
-  // Logout Function
   void _logout(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
     if (context.mounted) {
-      // Navigate back to Login and remove all previous screens from the stack
       Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
     }
   }
@@ -18,6 +18,17 @@ class DashboardPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
+
+        leading: IconButton(
+          icon: const Icon(Icons.person, color: Colors.white),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProfilePage()),
+            );
+          },
+        ),
+
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -27,6 +38,7 @@ class DashboardPage extends StatelessWidget {
             ),
           ),
         ),
+
         title: const Text(
           'LocalLens Feed',
           style: TextStyle(
@@ -36,12 +48,11 @@ class DashboardPage extends StatelessWidget {
             color: Colors.white,
           ),
         ),
+
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_active, color: Colors.white),
-            onPressed: () {
-              // TODO: Navigation to Notifications Screen
-            },
+            onPressed: () {},
           ),
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
@@ -54,21 +65,21 @@ class DashboardPage extends StatelessWidget {
         color: Colors.grey[100],
         child: ListView.builder(
           padding: const EdgeInsets.all(12),
-          itemCount: 5, // Replace with StreamBuilder<QuerySnapshot> later
+          itemCount: 5,
           itemBuilder: (context, index) {
             return _buildPostCard();
           },
         ),
       ),
 
+      // ⭐ ONLY PINK CAMERA ICON (NO ACTION)
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.pinkAccent,
-        elevation: 4,
-        child: const Icon(Icons.add_a_photo, color: Colors.white),
-        onPressed: () {
-          // TODO: Navigate to Create Post Screen
-        },
+        child: const Icon(Icons.camera_alt, color: Colors.white),
+        onPressed: () {}, // intentionally empty
       ),
+
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -76,7 +87,7 @@ class DashboardPage extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 20),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      clipBehavior: Clip.antiAlias, // Ensures image corners are rounded
+      clipBehavior: Clip.antiAlias,
       elevation: 3,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,49 +104,39 @@ class DashboardPage extends StatelessWidget {
             subtitle: Text("2 minutes ago • Near you"),
           ),
 
-          // Image Area
           Image.network(
-            'https://picsum.photos/400/200', // Dynamic placeholder
+            'https://picsum.photos/400/200',
             height: 200,
             width: double.infinity,
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(
-              height: 200,
-              color: Colors.grey[300],
-              child: const Icon(Icons.broken_image, size: 50),
-            ),
           ),
 
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
+              children: const [
+                Text(
                   "Check out this amazing hidden spot I found today! #LocalLens",
                   style: TextStyle(fontSize: 15, color: Colors.black87),
                 ),
-                const SizedBox(height: 15),
+                SizedBox(height: 15),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.favorite_border,
                       color: Colors.pinkAccent,
                       size: 20,
                     ),
-                    const SizedBox(width: 5),
-                    const Text(
+                    SizedBox(width: 5),
+                    Text(
                       "12 likes",
                       style: TextStyle(fontWeight: FontWeight.w500),
                     ),
-                    const SizedBox(width: 25),
-                    const Icon(
-                      Icons.comment_outlined,
-                      color: Colors.grey,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 5),
-                    const Text(
+                    SizedBox(width: 25),
+                    Icon(Icons.comment_outlined, color: Colors.grey, size: 20),
+                    SizedBox(width: 5),
+                    Text(
                       "3 comments",
                       style: TextStyle(fontWeight: FontWeight.w500),
                     ),
