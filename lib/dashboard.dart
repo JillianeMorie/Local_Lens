@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // 1. Add this import
 import 'profile.dart';
 import 'create_post.dart';
-
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
 
