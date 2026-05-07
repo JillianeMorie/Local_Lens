@@ -31,7 +31,11 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "33CC10EC2044A3C60003C045"
+<<<<<<< HEAD
             BuildableName = "locallens.app"
+=======
+            BuildableName = "flutter_local.app"
+>>>>>>> b3736b3aa3c14aa71f3805379208cba1349f3842
             BlueprintName = "Runner"
             ReferencedContainer = "container:Runner.xcodeproj">
          </BuildableReference>
@@ -66,7 +70,11 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "33CC10EC2044A3C60003C045"
+<<<<<<< HEAD
             BuildableName = "locallens.app"
+=======
+            BuildableName = "flutter_local.app"
+>>>>>>> b3736b3aa3c14aa71f3805379208cba1349f3842
             BlueprintName = "Runner"
             ReferencedContainer = "container:Runner.xcodeproj">
          </BuildableReference>
@@ -83,7 +91,11 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "33CC10EC2044A3C60003C045"
+<<<<<<< HEAD
             BuildableName = "locallens.app"
+=======
+            BuildableName = "flutter_local.app"
+>>>>>>> b3736b3aa3c14aa71f3805379208cba1349f3842
             BlueprintName = "Runner"
             ReferencedContainer = "container:Runner.xcodeproj">
          </BuildableReference>

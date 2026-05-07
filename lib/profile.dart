@@ -19,6 +19,8 @@ class _ProfilePageState extends State<ProfilePage> {
   File? _image;
   File? _profileImage;
   String? _profileImageUrl;
+  String? _profileUsername;
+  String? _imageUrl;
 
   final picker = ImagePicker();
   final TextEditingController _captionController = TextEditingController();
@@ -29,6 +31,7 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
     loadProfileImage();
+    loadProfileUsername();
   }
 
   // ---------------- PROFILE IMAGE ----------------
@@ -72,6 +75,28 @@ class _ProfilePageState extends State<ProfilePage> {
       });
     }
   }
+    Future<void> loadProfileUsername() async {
+    if (user == null) return;
+    try{
+      final querySnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .where('email', isEqualTo: user?.email)
+        .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        // 3. Access the first document found
+        var userDoc = querySnapshot.docs.first;
+        Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+        setState(() {
+        _profileUsername = userData['username'];
+        });
+      }else {
+        print("No user found with the exact username: ${user?.email}");
+      }
+    }catch (e) {
+    print("Error fetching user: $e");
+    }
+  }
 
   // ---------------- PICK POST IMAGE ----------------
   Future<void> pickImage() async {
@@ -84,7 +109,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // ---------------- UPLOAD POST ----------------
   Future<void> uploadPost() async {
-    if (_image == null || _captionController.text.isEmpty) {
+    if (_image == null && _captionController.text.isEmpty) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Add image and caption")));
@@ -94,21 +119,20 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() => _isLoading = true);
 
     try {
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child('posts')
-          .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
+      if (_image != null){
+        final ref = FirebaseStorage.instance
+            .ref()
+            .child('posts')
+            .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
 
-      await ref.putFile(_image!);
-      final imageUrl = await ref.getDownloadURL();
-
+        await ref.putFile(_image!);
+        final _imageURL = await ref.getDownloadURL();
+      }
       await FirebaseFirestore.instance.collection('posts').add({
-        'username': user?.displayName ?? "Anonymous",
+        'author': _profileUsername ?? "Anonymous",
         'caption': _captionController.text,
-        'imageUrl': imageUrl,
+        'imageUrl': _imageUrl ?? null,
         'createdAt': Timestamp.now(),
-        'userId': user?.uid,
-        'profileImage': _profileImageUrl, // save it so we can show on feed
       });
 
       setState(() {
@@ -374,7 +398,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
             // ---------------- USER INFO ----------------
             Text(
-              user?.displayName ?? "No Name",
+              _profileUsername ?? "",
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
 

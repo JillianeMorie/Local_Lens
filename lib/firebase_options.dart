@@ -83,5 +83,4 @@ class DefaultFirebaseOptions {
     projectId: 'local-lens-82877',
     storageBucket: 'local-lens-82877.firebasestorage.app',
   );
-
 }
