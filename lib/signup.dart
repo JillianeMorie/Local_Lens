@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -36,8 +37,11 @@ class _SignupPageState extends State<SignupPage> {
         password: _passwordController.text.trim(),
       );
 
-      // 2. Optionally, update the user's display name
-      await userCredential.user?.updateDisplayName(_fullNameController.text.trim());
+      await FirebaseFirestore.instance.collection('users').add({
+        'email': _emailController.text.trim(),
+        'password': _passwordController.text.trim(),
+        'username': _usernameController.text.trim(),
+      });
 
       // Note: If you want to store the "Username", you will need to save it to 
       // Firestore or Realtime Database, as Firebase Auth only has a single Display Name field.

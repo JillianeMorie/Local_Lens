@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // 1. Add this import
 import 'profile.dart';
 import 'create_post.dart';
 
@@ -13,12 +14,27 @@ class DashboardPage extends StatelessWidget {
     }
   }
 
+  void _toggleLike(String postId, List<dynamic> currentLikes) async {
+    final String? currentUserId = FirebaseAuth.instance.currentUser!.email;
+    final DocumentReference postRef = FirebaseFirestore.instance.collection('posts').doc(postId);
+
+    if (currentLikes.contains(currentUserId)) {
+      // User already liked it, so "unlike" it
+      await postRef.update({
+        'likes': FieldValue.arrayRemove([currentUserId])
+      });
+    } else {
+      // User hasn't liked it, so "like" it
+      await postRef.update({
+        'likes': FieldValue.arrayUnion([currentUserId])
+      });
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-
         leading: IconButton(
           icon: const Icon(Icons.person, color: Colors.white),
           onPressed: () {
@@ -28,7 +44,6 @@ class DashboardPage extends StatelessWidget {
             );
           },
         ),
-
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -38,7 +53,6 @@ class DashboardPage extends StatelessWidget {
             ),
           ),
         ),
-
         title: const Text(
           'LocalLens Feed',
           style: TextStyle(
@@ -48,7 +62,6 @@ class DashboardPage extends StatelessWidget {
             color: Colors.white,
           ),
         ),
-
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_active, color: Colors.white),
@@ -60,30 +73,60 @@ class DashboardPage extends StatelessWidget {
           ),
         ],
       ),
+      // 2. Wrap the body in a StreamBuilder
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('posts')
+            .orderBy('createdAt', descending: true) // Newest posts first
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Center(child: Text("Something went wrong"));
+          }
 
-      body: Container(
-        color: Colors.grey[100],
-        child: ListView.builder(
-          padding: const EdgeInsets.all(12),
-          itemCount: 5,
-          itemBuilder: (context, index) {
-            return _buildPostCard();
-          },
-        ),
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final posts = snapshot.data?.docs ?? [];
+
+          if (posts.isEmpty) {
+            return const Center(child: Text("No posts yet. Be the first!"));
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: posts.length,
+            itemBuilder: (context, index) {
+              // Extract data from document
+              final data = posts[index].data() as Map<String, dynamic>;
+              final String postId = posts[index].id;
+              return _buildPostCard(data, postId);
+            },
+          );
+        },
       ),
-
-      // ⭐ ONLY PINK CAMERA ICON (NO ACTION)
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.pinkAccent,
         child: const Icon(Icons.camera_alt, color: Colors.white),
-        onPressed: () {}, // intentionally empty
+        onPressed: () {
+          // You might want to navigate to CreatePostPage here later
+        },
       ),
-
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
-  Widget _buildPostCard() {
+  // 3. Updated to accept data Map
+  Widget _buildPostCard(Map<String, dynamic> data , String postId) {
+  final String currentUserId = FirebaseAuth.instance.currentUser?.email ?? "";
+  final List<dynamic> likes = data['likes'] ?? [];
+  final bool isLiked = likes.contains(currentUserId);
+    // Formatting the timestamp
+    final Timestamp? timestamp = data['createdAt'] as Timestamp?;
+    final String timeAgo = timestamp != null 
+        ? "${DateTime.now().difference(timestamp.toDate()).inMinutes}m ago" 
+        : "Just now";
+
     return Card(
       margin: const EdgeInsets.only(bottom: 20),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
@@ -92,54 +135,53 @@ class DashboardPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const ListTile(
-            leading: CircleAvatar(
+          ListTile(
+            leading: const CircleAvatar(
               backgroundColor: Colors.greenAccent,
               child: Icon(Icons.person, color: Colors.white),
             ),
             title: Text(
-              "Local Explorer",
-              style: TextStyle(fontWeight: FontWeight.bold),
+              data['author'] ?? "Unknown Author",
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            subtitle: Text("2 minutes ago • Near you"),
+            subtitle: Text("$timeAgo • Near you"),
           ),
 
-          Image.network(
-            'https://picsum.photos/400/200',
-            height: 200,
-            width: double.infinity,
-            fit: BoxFit.cover,
-          ),
+          // 4. Conditional Image logic
+          if (data['imageUrl'] != null && data['image'].toString().isNotEmpty)
+            Image.network(
+              data['imageUrl'],
+              height: 200,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                height: 100,
+                color: Colors.grey[300],
+                child: const Icon(Icons.broken_image, color: Colors.grey),
+              ),
+            ),
 
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
-                  "Check out this amazing hidden spot I found today! #LocalLens",
-                  style: TextStyle(fontSize: 15, color: Colors.black87),
+                  data['caption'] ?? "",
+                  style: const TextStyle(fontSize: 15, color: Colors.black87),
                 ),
-                SizedBox(height: 15),
+                const SizedBox(height: 15),
                 Row(
                   children: [
-                    Icon(
-                      Icons.favorite_border,
-                      color: Colors.pinkAccent,
-                      size: 20,
+                    IconButton(
+                      icon: Icon(
+                        isLiked ? Icons.favorite : Icons.favorite_border,
+                        color: isLiked ? Colors.pinkAccent : Colors.grey,
+                      ),
+                      onPressed: () => _toggleLike(postId, likes),
                     ),
                     SizedBox(width: 5),
-                    Text(
-                      "12 likes",
-                      style: TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                    SizedBox(width: 25),
-                    Icon(Icons.comment_outlined, color: Colors.grey, size: 20),
-                    SizedBox(width: 5),
-                    Text(
-                      "3 comments",
-                      style: TextStyle(fontWeight: FontWeight.w500),
-                    ),
+                    Text("${likes.length} likes", style: TextStyle(fontWeight: FontWeight.w500)),
                   ],
                 ),
               ],
