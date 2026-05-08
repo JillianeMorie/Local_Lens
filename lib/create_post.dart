@@ -5,6 +5,8 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+const String _storageBucket = 'local-lens-82877.appspot.com';
+
 class CreatePostPage extends StatefulWidget {
   const CreatePostPage({super.key});
 
@@ -29,7 +31,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
   }
 
   Future<void> uploadPost() async {
-    if (_image == null || _captionController.text.isEmpty) {
+    if (_image == null && _captionController.text.trim().isEmpty) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Add image and caption")));
@@ -40,32 +42,53 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
     try {
       final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("You must be logged in to post.")),
+        );
+        return;
+      }
 
-      // 🔥 Upload image to Firebase Storage
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child('posts')
-          .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
+      String? imageUrl;
+      if (_image != null) {
+        // Upload image only when a file is selected.
+        final ref = FirebaseStorage.instanceFor(bucket: _storageBucket)
+            .ref()
+            .child('posts')
+            .child(user.uid)
+            .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
 
-      await ref.putFile(_image!);
+        await ref.putFile(_image!);
+        imageUrl = await ref.getDownloadURL();
+      }
 
-      final imageUrl = await ref.getDownloadURL();
-
-      // 🔥 Save to Firestore
+      // Save post data to Firestore.
       await FirebaseFirestore.instance.collection('posts').add({
-        'username': user?.displayName ?? "Anonymous",
-        'caption': _captionController.text,
+        'author': user.displayName ?? user.email ?? "Anonymous",
+        'caption': _captionController.text.trim(),
         'imageUrl': imageUrl,
+        'userId': user.uid,
+        'likes': <String>[],
         'createdAt': Timestamp.now(),
       });
 
+      if (!mounted) return;
       Navigator.pop(context);
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+      if (!mounted) return;
+      final message = e.toString();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            message.contains('StorageException')
+                ? 'Image upload failed. Check Firebase Storage bucket and rules in Firebase Console.'
+                : "Error: $e",
+          ),
+        ),
+      );
     }
 
+    if (!mounted) return;
     setState(() => _isLoading = false);
   }
 

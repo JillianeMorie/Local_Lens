@@ -109,7 +109,10 @@ class DashboardPage extends StatelessWidget {
         backgroundColor: Colors.pinkAccent,
         child: const Icon(Icons.camera_alt, color: Colors.white),
         onPressed: () {
-          // You might want to navigate to CreatePostPage here later
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CreatePostPage()),
+          );
         },
       ),
     );
@@ -147,7 +150,8 @@ class DashboardPage extends StatelessWidget {
           ),
 
           // 4. Conditional Image logic
-          if (data['imageUrl'] != null && data['image'].toString().isNotEmpty)
+          if ((data['imageUrl'] is String) &&
+              (data['imageUrl'] as String).startsWith('http'))
             Image.network(
               data['imageUrl'],
               height: 200,

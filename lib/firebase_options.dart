@@ -45,7 +45,7 @@ class DefaultFirebaseOptions {
     appId: '1:532159564212:ios:79a8a4dadbfb2e0e104ae1',
     messagingSenderId: '532159564212',
     projectId: 'local-lens-82877',
-    storageBucket: 'local-lens-82877.firebasestorage.app',
+    storageBucket: 'local-lens-82877.appspot.com',
     iosBundleId: 'com.example.locallens',
   );
 
@@ -54,7 +54,7 @@ class DefaultFirebaseOptions {
     appId: '1:532159564212:ios:79a8a4dadbfb2e0e104ae1',
     messagingSenderId: '532159564212',
     projectId: 'local-lens-82877',
-    storageBucket: 'local-lens-82877.firebasestorage.app',
+    storageBucket: 'local-lens-82877.appspot.com',
     iosBundleId: 'com.example.locallens',
   );
 
@@ -64,7 +64,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '532159564212',
     projectId: 'local-lens-82877',
     authDomain: 'local-lens-82877.firebaseapp.com',
-    storageBucket: 'local-lens-82877.firebasestorage.app',
+    storageBucket: 'local-lens-82877.appspot.com',
   );
 
   static const FirebaseOptions web = FirebaseOptions(
@@ -73,7 +73,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '532159564212',
     projectId: 'local-lens-82877',
     authDomain: 'local-lens-82877.firebaseapp.com',
-    storageBucket: 'local-lens-82877.firebasestorage.app',
+    storageBucket: 'local-lens-82877.appspot.com',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
@@ -81,6 +81,6 @@ class DefaultFirebaseOptions {
     appId: '1:532159564212:android:0500339b91df770f104ae1',
     messagingSenderId: '532159564212',
     projectId: 'local-lens-82877',
-    storageBucket: 'local-lens-82877.firebasestorage.app',
+    storageBucket: 'local-lens-82877.appspot.com',
   );
 }
