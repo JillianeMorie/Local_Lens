@@ -86,7 +86,7 @@ class _ProfilePageState extends State<ProfilePage> {
       if (querySnapshot.docs.isNotEmpty) {
         // 3. Access the first document found
         var userDoc = querySnapshot.docs.first;
-        Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+        Map<String, dynamic> userData = userDoc.data();
         setState(() {
         _profileUsername = userData['username'];
         });
@@ -109,7 +109,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // ---------------- UPLOAD POST ----------------
   Future<void> uploadPost() async {
-    if (_image == null && _captionController.text.isEmpty) {
+    if (_image == null && _captionController.text.trim().isEmpty) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Add image and caption")));
@@ -119,19 +119,23 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() => _isLoading = true);
 
     try {
-      if (_image != null){
+      _imageUrl = null;
+      if (_image != null) {
         final ref = FirebaseStorage.instance
             .ref()
             .child('posts')
+            .child(user!.uid)
             .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
 
         await ref.putFile(_image!);
-        final _imageURL = await ref.getDownloadURL();
+        _imageUrl = await ref.getDownloadURL();
       }
       await FirebaseFirestore.instance.collection('posts').add({
-        'author': _profileUsername ?? "Anonymous",
-        'caption': _captionController.text,
-        'imageUrl': _imageUrl ?? null,
+        'author': _profileUsername ?? user?.email ?? "Anonymous",
+        'caption': _captionController.text.trim(),
+        'imageUrl': _imageUrl,
+        'userId': user?.uid,
+        'likes': <String>[],
         'createdAt': Timestamp.now(),
       });
 
@@ -274,22 +278,24 @@ class _ProfilePageState extends State<ProfilePage> {
                   : null,
             ),
             title: Text(
-              data['username'] ?? "You",
+              data['author'] ?? "You",
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: Text(_formatTimestamp(timestamp)),
           ),
-          Image.network(
-            data['imageUrl'],
-            height: 200,
-            width: double.infinity,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(
+          if ((data['imageUrl'] is String) &&
+              (data['imageUrl'] as String).isNotEmpty)
+            Image.network(
+              data['imageUrl'],
               height: 200,
-              color: Colors.grey[300],
-              child: const Icon(Icons.broken_image, size: 50),
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                height: 200,
+                color: Colors.grey[300],
+                child: const Icon(Icons.broken_image, size: 50),
+              ),
             ),
-          ),
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: Column(
@@ -518,7 +524,6 @@ class _ProfilePageState extends State<ProfilePage> {
                     stream: FirebaseFirestore.instance
                         .collection('posts')
                         .where('userId', isEqualTo: user?.uid)
-                        .orderBy('createdAt', descending: true)
                         .snapshots(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
@@ -535,11 +540,22 @@ class _ProfilePageState extends State<ProfilePage> {
                         );
                       }
 
-                      // Show real posts
+                      // Show real posts sorted latest first without requiring composite index.
+                      final docs = List<DocumentSnapshot>.from(snapshot.data!.docs)
+                        ..sort((a, b) {
+                          final aMap = a.data() as Map<String, dynamic>;
+                          final bMap = b.data() as Map<String, dynamic>;
+                          final aTime =
+                              (aMap['createdAt'] as Timestamp?)?.toDate() ??
+                                  DateTime.fromMillisecondsSinceEpoch(0);
+                          final bTime =
+                              (bMap['createdAt'] as Timestamp?)?.toDate() ??
+                                  DateTime.fromMillisecondsSinceEpoch(0);
+                          return bTime.compareTo(aTime);
+                        });
+
                       return Column(
-                        children: snapshot.data!.docs
-                            .map((doc) => _buildPostCard(doc))
-                            .toList(),
+                        children: docs.map((doc) => _buildPostCard(doc)).toList(),
                       );
                     },
                   ),
