@@ -5,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -47,21 +49,46 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> uploadProfileImage() async {
     if (_profileImage == null || user == null) return;
 
-    final ref = FirebaseStorage.instance
-        .ref()
-        .child('profile_pictures')
-        .child('${user!.uid}.jpg');
+    const String apiKey = 'a371f615dfc5ee202665e160d1fd721c';
+    final uri = Uri.parse('https://api.imgbb.com/1/upload?key=$apiKey');
 
-    await ref.putFile(_profileImage!);
-    final url = await ref.getDownloadURL();
+    if (_profileImage != null) {
+      try {
+        var request = http.MultipartRequest('POST', uri);
+        
+        // Attach the file
+        var multipartFile = await http.MultipartFile.fromPath('image', _profileImage!.path);
+        request.files.add(multipartFile);
 
-    setState(() => _profileImageUrl = url);
+        // Send the request
+        var response = await request.send();
 
-    await FirebaseFirestore.instance.collection('users').doc(user!.uid).set({
-      'profileImage': url,
-    }, SetOptions(merge: true));
+        if (response.statusCode == 200) {
+          // Read and parse the response
+          var responseData = await response.stream.bytesToString();
+          var jsonResponse = jsonDecode(responseData);
+
+          // The Direct Link is located at data -> url
+          String url = jsonResponse['data']['url'];
+
+          setState(() => _profileImageUrl = url);
+
+          await FirebaseFirestore.instance.collection('users').doc(user!.uid).set({
+            'profileImage': url,
+          }, SetOptions(merge: true));
+
+        } else {
+          print('Upload failed with status: ${response.statusCode}');
+        }
+      } catch (e) {
+        print('Error uploading to ImgBB: $e');
+      }
+    }else {
+      // Handle the case where the user hasn't picked an image yet
+      print("No image selected!");
+    }
   }
-
+  
   Future<void> loadProfileImage() async {
     if (user == null) return;
     final doc = await FirebaseFirestore.instance
@@ -75,23 +102,22 @@ class _ProfilePageState extends State<ProfilePage> {
       });
     }
   }
-    Future<void> loadProfileUsername() async {
+
+  Future<void> loadProfileUsername() async {
     if (user == null) return;
     try{
-      final querySnapshot = await FirebaseFirestore.instance
+      final doc = await FirebaseFirestore.instance
         .collection('users')
-        .where('email', isEqualTo: user?.email)
+        .doc(user!.uid)
         .get();
 
-      if (querySnapshot.docs.isNotEmpty) {
-        // 3. Access the first document found
-        var userDoc = querySnapshot.docs.first;
-        Map<String, dynamic> userData = userDoc.data();
+      if (doc.exists && doc.data()!.containsKey('username')) {
         setState(() {
-        _profileUsername = userData['username'];
+          _profileUsername = doc['username'];
         });
-      }else {
-        print("No user found with the exact username: ${user?.email}");
+      }
+      else {
+        print("No user found with the exact email: ${user?.email}");
       }
     }catch (e) {
     print("Error fetching user: $e");
@@ -119,24 +145,55 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() => _isLoading = true);
 
     try {
-      _imageUrl = null;
-      if (_image != null) {
-        final ref = FirebaseStorage.instance
-            .ref()
-            .child('posts')
-            .child(user!.uid)
-            .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
+      _image = null;
 
-        await ref.putFile(_image!);
-        _imageUrl = await ref.getDownloadURL();
+      if (_image != null) {
+        const String apiKey = 'a371f615dfc5ee202665e160d1fd721c';
+        final uri2 = Uri.parse('https://api.imgbb.com/1/upload?key=$apiKey');
+
+        try {
+          var request = http.MultipartRequest('POST', uri2);
+          
+          // Attach the file
+          var multipartFile2 = await http.MultipartFile.fromPath('image', _image!.path);
+          request.files.add(multipartFile2);
+
+          // Send the request
+          var response = await request.send();
+
+          if (response.statusCode == 200) {
+            // Read and parse the response
+            var responseData = await response.stream.bytesToString();
+            var jsonResponse = jsonDecode(responseData);
+
+            // The Direct Link is located at data -> url
+            String url2 = jsonResponse['data']['url'];
+        
+
+            setState(() => _imageUrl = url2);
+
+            
+          } else {
+            print('Upload failed with status: ${response.statusCode}');
+            return;
+          }
+        } catch (e) {
+          print('Error uploading to ImgBB: $e');
+          return;
+        }
+          
+      }else {
+      // Handle the case where the user hasn't picked an image yet
+      print("No image selected!");
       }
+
       await FirebaseFirestore.instance.collection('posts').add({
-        'author': _profileUsername ?? user?.email ?? "Anonymous",
-        'caption': _captionController.text.trim(),
-        'imageUrl': _imageUrl,
-        'userId': user?.uid,
-        'likes': <String>[],
-        'createdAt': Timestamp.now(),
+              'author': _profileUsername ?? user?.email ?? "Anonymous",
+              'caption': _captionController.text.trim(),
+              'imageUrl': _imageUrl,
+              'userId': user?.uid,
+              'likes': <String>[],
+              'createdAt': Timestamp.now(),
       });
 
       setState(() {
