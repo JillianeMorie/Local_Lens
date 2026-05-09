@@ -37,10 +37,11 @@ class _SignupPageState extends State<SignupPage> {
         password: _passwordController.text.trim(),
       );
 
-      await FirebaseFirestore.instance.collection('users').add({
+      await FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser?.uid).set({
         'email': _emailController.text.trim(),
         'password': _passwordController.text.trim(),
         'username': _usernameController.text.trim(),
+        'uid': FirebaseAuth.instance.currentUser?.email,
       });
 
       // Note: If you want to store the "Username", you will need to save it to 

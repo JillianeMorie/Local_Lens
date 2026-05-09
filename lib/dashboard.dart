@@ -13,11 +13,11 @@ class DashboardPage extends StatelessWidget {
     }
   }
 
-  void _toggleLike(String postId, List<dynamic> currentLikes) async {
-    final String? currentUserId = FirebaseAuth.instance.currentUser!.email;
+  void _toggleLike(String postId, bool isLiked) async {
+    final String? currentUserId = FirebaseAuth.instance.currentUser!.uid;
     final DocumentReference postRef = FirebaseFirestore.instance.collection('posts').doc(postId);
 
-    if (currentLikes.contains(currentUserId)) {
+    if (isLiked) {
       // User already liked it, so "unlike" it
       await postRef.update({
         'likes': FieldValue.arrayRemove([currentUserId])
@@ -120,10 +120,11 @@ class DashboardPage extends StatelessWidget {
 
   // 3. Updated to accept data Map
   Widget _buildPostCard(Map<String, dynamic> data , String postId) {
-  final String currentUserId = FirebaseAuth.instance.currentUser?.email ?? "";
-  final List<dynamic> likes = data['likes'] ?? [];
-  final bool isLiked = likes.contains(currentUserId);
-    // Formatting the timestamp
+    final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? "";
+    final List<dynamic> likes = data['likes'] ?? [];
+    final bool isLiked = likes.contains(currentUserId);
+
+      // Formatting the timestamp
     final Timestamp? timestamp = data['createdAt'] as Timestamp?;
     final String timeAgo = timestamp != null 
         ? "${DateTime.now().difference(timestamp.toDate()).inMinutes}m ago" 
@@ -181,7 +182,7 @@ class DashboardPage extends StatelessWidget {
                         isLiked ? Icons.favorite : Icons.favorite_border,
                         color: isLiked ? Colors.pinkAccent : Colors.grey,
                       ),
-                      onPressed: () => _toggleLike(postId, likes),
+                      onPressed: () => _toggleLike(postId, isLiked),
                     ),
                     SizedBox(width: 5),
                     Text("${likes.length} likes", style: TextStyle(fontWeight: FontWeight.w500)),
