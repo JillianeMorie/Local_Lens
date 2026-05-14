@@ -32,10 +32,11 @@ class _SignupPageState extends State<SignupPage> {
 
     try {
       // 1. Create the user in Firebase Auth
-      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+            email: _emailController.text.trim(),
+            password: _passwordController.text.trim(),
+          );
 
       await FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser?.uid).set({
         'email': _emailController.text.trim(),
@@ -44,12 +45,14 @@ class _SignupPageState extends State<SignupPage> {
         'uid': FirebaseAuth.instance.currentUser?.email,
       });
 
-      // Note: If you want to store the "Username", you will need to save it to 
+      // Note: If you want to store the "Username", you will need to save it to
       // Firestore or Realtime Database, as Firebase Auth only has a single Display Name field.
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Account Created Successfully! You can now log in.')),
+          const SnackBar(
+            content: Text('Account Created Successfully! You can now log in.'),
+          ),
         );
         Navigator.pop(context); // Navigate back to the Login Page
       }
@@ -57,7 +60,11 @@ class _SignupPageState extends State<SignupPage> {
       if (mounted) {
         // Show Firebase error messages (e.g., weak password, email already in use)
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message ?? 'Registration failed. Please try again.')),
+          SnackBar(
+            content: Text(
+              e.message ?? 'Registration failed. Please try again.',
+            ),
+          ),
         );
       }
     } finally {
@@ -155,9 +162,17 @@ class _SignupPageState extends State<SignupPage> {
                   child: Column(
                     children: [
                       _buildTextField("Full Name", _fullNameController),
-                      _buildTextField("Email Address", _emailController, isEmail: true),
+                      _buildTextField(
+                        "Email Address",
+                        _emailController,
+                        isEmail: true,
+                      ),
                       _buildTextField("Username", _usernameController),
-                      _buildTextField("Password (min 6 chars)", _passwordController, isObscure: true),
+                      _buildTextField(
+                        "Password (min 6 chars)",
+                        _passwordController,
+                        isObscure: true,
+                      ),
 
                       const SizedBox(height: 30),
 
@@ -192,7 +207,12 @@ class _SignupPageState extends State<SignupPage> {
   }
 
   // Helper for consistent rectangular text inputs
-  Widget _buildTextField(String hint, TextEditingController controller, {bool isObscure = false, bool isEmail = false}) {
+  Widget _buildTextField(
+    String hint,
+    TextEditingController controller, {
+    bool isObscure = false,
+    bool isEmail = false,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
       decoration: BoxDecoration(
