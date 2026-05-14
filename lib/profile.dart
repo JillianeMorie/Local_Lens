@@ -145,55 +145,61 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() => _isLoading = true);
 
     try {
-      _image = null;
+      final File? imageToUpload = _image;
+      String? postedImageUrl;
 
-      if (_image != null) {
+      if (imageToUpload != null) {
         const String apiKey = 'a371f615dfc5ee202665e160d1fd721c';
         final uri2 = Uri.parse('https://api.imgbb.com/1/upload?key=$apiKey');
 
         try {
           var request = http.MultipartRequest('POST', uri2);
-          
-          // Attach the file
-          var multipartFile2 = await http.MultipartFile.fromPath('image', _image!.path);
+
+          var multipartFile2 =
+              await http.MultipartFile.fromPath('image', imageToUpload.path);
           request.files.add(multipartFile2);
 
-          // Send the request
           var response = await request.send();
 
           if (response.statusCode == 200) {
-            // Read and parse the response
             var responseData = await response.stream.bytesToString();
             var jsonResponse = jsonDecode(responseData);
 
-            // The Direct Link is located at data -> url
-            String url2 = jsonResponse['data']['url'];
-        
-
-            setState(() => _imageUrl = url2);
-
-            
+            postedImageUrl = jsonResponse['data']['url'] as String;
+            if (mounted) {
+              setState(() => _imageUrl = postedImageUrl);
+            }
           } else {
             print('Upload failed with status: ${response.statusCode}');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Image upload failed (${response.statusCode}).',
+                  ),
+                ),
+              );
+            }
             return;
           }
         } catch (e) {
           print('Error uploading to ImgBB: $e');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Image upload failed: $e')),
+            );
+          }
           return;
         }
-          
-      }else {
-      // Handle the case where the user hasn't picked an image yet
-      print("No image selected!");
       }
 
       await FirebaseFirestore.instance.collection('posts').add({
-              'author': _profileUsername ?? user?.email ?? "Anonymous",
-              'caption': _captionController.text.trim(),
-              'imageUrl': _imageUrl,
-              'userId': user?.uid,
-              'likes': <String>[],
-              'createdAt': Timestamp.now(),
+        'author': _profileUsername ?? user?.email ?? "Anonymous",
+        'caption': _captionController.text.trim(),
+        'imageUrl': postedImageUrl,
+        'userId': user?.uid,
+        'likes': <String>[],
+        'createdAt': Timestamp.now(),
       });
 
       setState(() {
@@ -212,10 +218,10 @@ class _ProfilePageState extends State<ProfilePage> {
           context,
         ).showSnackBar(SnackBar(content: Text("Error: $e")));
       }
-    }
-
-    if (mounted) {
-      setState(() => _isLoading = false);
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

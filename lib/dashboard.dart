@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // 1. Add this import
 import 'profile.dart';
 import 'create_post.dart';
+
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
 
@@ -15,20 +16,23 @@ class DashboardPage extends StatelessWidget {
 
   void _toggleLike(String postId, bool isLiked) async {
     final String? currentUserId = FirebaseAuth.instance.currentUser!.uid;
-    final DocumentReference postRef = FirebaseFirestore.instance.collection('posts').doc(postId);
+    final DocumentReference postRef = FirebaseFirestore.instance
+        .collection('posts')
+        .doc(postId);
 
     if (isLiked) {
       // User already liked it, so "unlike" it
       await postRef.update({
-        'likes': FieldValue.arrayRemove([currentUserId])
+        'likes': FieldValue.arrayRemove([currentUserId]),
       });
     } else {
       // User hasn't liked it, so "like" it
       await postRef.update({
-        'likes': FieldValue.arrayUnion([currentUserId])
+        'likes': FieldValue.arrayUnion([currentUserId]),
       });
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -119,15 +123,15 @@ class DashboardPage extends StatelessWidget {
   }
 
   // 3. Updated to accept data Map
-  Widget _buildPostCard(Map<String, dynamic> data , String postId) {
+  Widget _buildPostCard(Map<String, dynamic> data, String postId) {
     final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? "";
     final List<dynamic> likes = data['likes'] ?? [];
     final bool isLiked = likes.contains(currentUserId);
 
-      // Formatting the timestamp
+    // Formatting the timestamp
     final Timestamp? timestamp = data['createdAt'] as Timestamp?;
-    final String timeAgo = timestamp != null 
-        ? "${DateTime.now().difference(timestamp.toDate()).inMinutes}m ago" 
+    final String timeAgo = timestamp != null
+        ? "${DateTime.now().difference(timestamp.toDate()).inMinutes}m ago"
         : "Just now";
 
     return Card(
@@ -185,7 +189,10 @@ class DashboardPage extends StatelessWidget {
                       onPressed: () => _toggleLike(postId, isLiked),
                     ),
                     SizedBox(width: 5),
-                    Text("${likes.length} likes", style: TextStyle(fontWeight: FontWeight.w500)),
+                    Text(
+                      "${likes.length} likes",
+                      style: TextStyle(fontWeight: FontWeight.w500),
+                    ),
                   ],
                 ),
               ],
